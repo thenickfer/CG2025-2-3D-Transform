@@ -1,3 +1,4 @@
+import time
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from OpenGL.GL import *
@@ -204,9 +205,13 @@ def teclado(key, x, y):
     glutPostRedisplay()
     pass
 
-def teste(key, x, y):
+def teste(value):
     global o3
-    o3.update()
+    if window_3_instanciada:
+        o3.update()
+        glutSetWindow(window_3)
+        glutPostRedisplay()
+        glutTimerFunc(100, teste, 0)
 
 def criaWin3():
     global window_3, window_3_instanciada
@@ -222,7 +227,7 @@ def criaWin3():
     initObj3()
     # Registra a funcao callback de redesenho da janela de visualizacao
     glutDisplayFunc(desenhaObj3)
-    glutKeyboardFunc(teste)
+    glutTimerFunc(33, teste, 0)
     window_3_instanciada = True
 
 
