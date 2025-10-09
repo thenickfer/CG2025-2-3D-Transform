@@ -3,12 +3,13 @@ from Objeto3D import *
 
 
 class Transicao3D():
-    def __init__(self):
+    def __init__(self, num_frames: int):
         self.o1 = Objeto3D()
         self.o2 = Objeto3D()
         self.interpolated = Objeto3D()
         self.stagesVertex = []
         self.progess = 0.0
+        self.num_frames = num_frames
 
     def loadObj1(self, file:str):
         self.o1.LoadFile(file)
@@ -33,56 +34,86 @@ class Transicao3D():
                 vertex.z + mid_diff.z
                 )
 
-        self.stagesVertex = [[] for _ in range(10)]
 
         self.interpolated.faces = self.o1.faces.copy()
         self.interpolated.vertices = self.o1.vertices.copy()
+        self.stagesVertex = [self.interpolated.vertices.copy() for _ in range(self.num_frames)]
 
-        self.stagesVertex[0] = self.interpolated.vertices.copy()
+        o2_facen = len(self.o2.faces)
+        normalizer = self.num_frames-1
+        for i in range(len(self.o1.faces)):
+            o1_face = self.o1.faces[i]
+            target_face = self.o2.faces[i%o2_facen]
 
-        for i in range(1,10):
-            self.stagesVertex[i] = [Ponto(b.x, b.y, b.z) for b in self.o1.vertices]
-            porcento1 = (10-i)/10
-            porcento2 = i/10
-            for face in self.interpolated.faces:
-                mid = Ponto(0, 0, 0)
-                for iv in face:
-                    mid += self.stagesVertex[i-1][iv]
-                mid/=len(face)
-                nearest_face_idx, nearest_distance, nearest_mid = self.findNearest(mid, self.o2)
-                nearFace = self.o2.faces[nearest_face_idx]
-                diff = nearest_mid - mid
+            while(len(target_face)>len(o1_face)):
+                o1_face.append(o1_face[0])
+            while(len(o1_face)>len(target_face)):
+                target_face.append(target_face[0])
 
-                #problema: alguns poligonos tem 4 vertices, outros 3
+            for ix in range(len(o1_face)):
+                    vertex = self.o1.vertices[o1_face[ix]]
+                    nearVertex = self.o2.vertices[target_face[ix]] 
+                    for j in range(1, self.num_frames):
+                        porcento1 = (normalizer-j)/normalizer
+                        porcento2 = j/normalizer
+                        new_vet = Ponto(
+                            vertex.x*porcento1 + nearVertex.x * porcento2,
+                            vertex.y*porcento1 + nearVertex.y*porcento2,
+                            vertex.z*porcento1 + nearVertex.z*porcento2
+                        )
+                        self.stagesVertex[j][o1_face[ix]] = new_vet
 
-                while(len(nearFace)>len(face)):
-                    face.append(face[0])
-                while(len(face)>len(nearFace)):
-                    nearFace.append(nearFace[0])
-                
-                for ix in range(len(face)):
-                    vertex = self.o1.vertices[face[ix]]
-                    nearVertex = self.o2.vertices[nearFace[ix]]  # Fixed: use len(nearFace) instead of len(face)
-                    new_vet = Ponto(
-                        vertex.x*porcento1 + nearVertex.x * porcento2,
-                        vertex.y*porcento1 + nearVertex.y*porcento2,
-                        vertex.z*porcento1 + nearVertex.z*porcento2
-                    )
-                    self.stagesVertex[i][face[ix]] = new_vet
+    def preprocessProx(self):
+        if len(self.o2.faces) > len(self.o1.faces):
+            aux = self.o2
+            self.o2 = self.o1
+            self.o1 = aux
 
-                """ for ixv in face:
-                    vertex = self.o1.vertices[ixv]
-                    _, _, o2_vec = self.findNearestVertex(vertex, self.o2)
-                    new_vec = Ponto(
-                        vertex.x * porcento1 + o2_vec.x * porcento2,
-                        vertex.y * porcento1 + o2_vec.y * porcento2,
-                        vertex.z * porcento1 + o2_vec.z * porcento2
-                    )
+        mid_o1 = self.getMidPoint(self.o1)
+        mid_o2 = self.getMidPoint(self.o2)
+        mid_diff = mid_o1 - mid_o2;
 
-                    self.stagesVertex[i][ixv] = new_vec """
+        for vertex in self.o2.vertices:
+            vertex.set(
+                vertex.x + mid_diff.x,
+                vertex.y + mid_diff.y,
+                vertex.z + mid_diff.z
+                )
+
+
+        self.interpolated.faces = self.o1.faces.copy()
+        self.interpolated.vertices = self.o1.vertices.copy()
+        self.stagesVertex = [self.interpolated.vertices.copy() for _ in range(self.num_frames)]
+
+        map = [False for _ in self.interpolated.faces]
+
+        normalizer = self.num_frames-1
+        for i in range(len(self.o1.faces)):
+            o1_face = self.o1.faces[i]
+            target_idx, _, _ = self.findNearest(self.getFaceCenter(o1_face, self.o1), self.o2, map)
+            map[target_idx] = True
+            target_face = self.o2.faces[target_idx]
+
+            while(len(target_face)>len(o1_face)):
+                o1_face.append(o1_face[0])
+            while(len(o1_face)>len(target_face)):
+                target_face.append(target_face[0])
+
+            for ix in range(len(o1_face)):
+                    vertex = self.o1.vertices[o1_face[ix]]
+                    nearVertex = self.o2.vertices[target_face[ix]] 
+                    for j in range(1, self.num_frames):
+                        porcento1 = (normalizer-j)/normalizer
+                        porcento2 = j/normalizer
+                        new_vet = Ponto(
+                            vertex.x*porcento1 + nearVertex.x * porcento2,
+                            vertex.y*porcento1 + nearVertex.y*porcento2,
+                            vertex.z*porcento1 + nearVertex.z*porcento2
+                        )
+                        self.stagesVertex[j][o1_face[ix]] = new_vet
     
     def update(self):
-        #self.stagesVertex.append(self.interpolated.vertices)
+        self.stagesVertex.append(self.interpolated.vertices)
         if len(self.stagesVertex)>0:
             self.interpolated.vertices = self.stagesVertex.pop(0)
         self.interpolated.Desenha()
@@ -91,7 +122,7 @@ class Transicao3D():
     
                 
                 
-    def findNearest(self, target_point, obj):
+    def findNearest(self, target_point, obj, map):
 
         nearest_face_index = 0
         nearest_distance = float('inf')
@@ -99,17 +130,18 @@ class Transicao3D():
         
         for face_idx, face in enumerate(obj.faces):
 
-            face_center = Ponto(0, 0, 0)
-            for vertex_idx in face:
-                face_center += obj.vertices[vertex_idx]
-            face_center /= len(face)
+            if not map[face_idx]:
+                face_center = Ponto(0, 0, 0)
+                for vertex_idx in face:
+                    face_center += obj.vertices[vertex_idx]
+                face_center /= len(face)
 
-            distance = self._calculate_distance(target_point, face_center)
+                distance = self._calculate_distance(target_point, face_center)
 
-            if distance < nearest_distance:
-                nearest_distance = distance
-                nearest_face_index = face_idx
-                nearest_face_center = face_center
+                if distance < nearest_distance:
+                    nearest_distance = distance
+                    nearest_face_index = face_idx
+                    nearest_face_center = face_center
                 
         return nearest_face_index, nearest_distance, nearest_face_center
     

@@ -54,9 +54,9 @@ def initObj3():
     glEnable(GL_CULL_FACE)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-    o3 = Transicao3D()
-    o3.loadObj1('models/easy1.obj')
-    o3.loadObj2('models/easy2.obj')
+    o3 = Transicao3D(40)
+    o3.loadObj1('models/hard1.obj')
+    o3.loadObj2('models/hard2.obj')
     o3.preprocess()
 
     DefineLuz()
@@ -191,6 +191,7 @@ def desenhaObj3():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     glMatrixMode(GL_MODELVIEW)
+    PosicUser()
 
     DesenhaPiso()
     #DesenhaCubo()    
@@ -207,7 +208,15 @@ def teclado(key, x, y):
     glutPostRedisplay()
     pass
 
+animate = True
+
 def teclado_win3(key, x, y):
+    global animate
+    
+    if key == b' ':
+        animate = not animate
+
+def special_win3(key, x, y):
     global g_RotateX
     
     if key == GLUT_KEY_LEFT:
@@ -217,7 +226,7 @@ def teclado_win3(key, x, y):
 
 def teste(value):
     global o3
-    if window_3_instanciada:
+    if window_3_instanciada and animate:
         o3.update()
         glutSetWindow(window_3)
         glutPostRedisplay()
@@ -238,6 +247,7 @@ def criaWin3():
     # Registra a funcao callback de redesenho da janela de visualizacao
     glutDisplayFunc(desenhaObj3)
     glutKeyboardFunc(teclado_win3)
+    glutSpecialFunc(special_win3)
     glutTimerFunc(100, teste, 0)
     window_3_instanciada = True
 
