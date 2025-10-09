@@ -22,6 +22,17 @@ class Transicao3D():
             self.o2 = self.o1
             self.o1 = aux
 
+        mid_o1 = self.getMidPoint(self.o1)
+        mid_o2 = self.getMidPoint(self.o2)
+        mid_diff = mid_o1 - mid_o2;
+
+        for vertex in self.o2.vertices:
+            vertex.set(
+                vertex.x + mid_diff.x,
+                vertex.y + mid_diff.y,
+                vertex.z + mid_diff.z
+                )
+
         self.stagesVertex = [[] for _ in range(10)]
 
         self.interpolated.faces = self.o1.faces.copy()
@@ -71,10 +82,11 @@ class Transicao3D():
                     self.stagesVertex[i][ixv] = new_vec """
     
     def update(self):
-        self.stagesVertex.append(self.interpolated.vertices)
-        self.interpolated.vertices = self.stagesVertex.pop(0)
+        #self.stagesVertex.append(self.interpolated.vertices)
+        if len(self.stagesVertex)>0:
+            self.interpolated.vertices = self.stagesVertex.pop(0)
         self.interpolated.Desenha()
-        self.interpolated.DesenhaVertices()
+        #self.interpolated.DesenhaVertices()
         self.interpolated.DesenhaWireframe()
     
                 
@@ -131,4 +143,11 @@ class Transicao3D():
         return center
 
 
-    
+    def getMidPoint(self, obj: Objeto3D):
+        if not obj.vertices:
+            return Ponto(0, 0, 0)
+        mid = Ponto(0, 0, 0)
+        for v in obj.vertices:
+            mid += v
+        mid /= len(obj.vertices)
+        return mid

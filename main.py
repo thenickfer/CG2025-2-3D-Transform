@@ -10,6 +10,7 @@ o1:Objeto3D
 o2:Objeto3D
 o3:Transicao3D
 window_3_instanciada = False
+g_RotateX = 0
 
 def initObj1():
     global o1
@@ -112,6 +113,7 @@ def PosicUser():
     # As três últimas especificam o vetor up
     # https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/gluLookAt.xml
     gluLookAt(-2, 6, -8, 0, 0, 0, 0, 1.0, 0)
+    glRotatef(g_RotateX, 0, 1.0, 0)
 
 def DesenhaLadrilho():
     glColor3f(0.5, 0.5, 0.5)  # desenha QUAD preenchido
@@ -205,6 +207,14 @@ def teclado(key, x, y):
     glutPostRedisplay()
     pass
 
+def teclado_win3(key, x, y):
+    global g_RotateX
+    
+    if key == GLUT_KEY_LEFT:
+        g_RotateX -= 1.0
+    elif key == GLUT_KEY_RIGHT:
+        g_RotateX += 1.0
+
 def teste(value):
     global o3
     if window_3_instanciada:
@@ -227,7 +237,8 @@ def criaWin3():
     initObj3()
     # Registra a funcao callback de redesenho da janela de visualizacao
     glutDisplayFunc(desenhaObj3)
-    glutTimerFunc(33, teste, 0)
+    glutKeyboardFunc(teclado_win3)
+    glutTimerFunc(100, teste, 0)
     window_3_instanciada = True
 
 
