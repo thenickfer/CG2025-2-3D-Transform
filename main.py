@@ -24,6 +24,7 @@ def initObj1():
 
     o1 = Objeto3D()
     o1.LoadFile('models/easy1.obj')
+    o1.setColor((0.4, 0.42, 0.05))
 
     DefineLuz()
     PosicUser()
@@ -40,12 +41,13 @@ def initObj2():
 
     o2 = Objeto3D()
     o2.LoadFile('models/easy2.obj')
+    o2.setColor((0.4, 0.2, 0.3))
 
     DefineLuz()
     PosicUser()
 
 def initObj3():
-    global o3
+    global o1, o2, o3
     glClearColor(0.5, 0.5, 0.9, 1.0)
     glClearDepth(1.0)
 
@@ -55,8 +57,8 @@ def initObj3():
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     o3 = Transicao3D(40)
-    o3.loadObj1('models/hard1.obj')
-    o3.loadObj2('models/hard2.obj')
+    o3.loadObj1(o1)
+    o3.loadObj2(o2)
     o3.preprocess()
 
     DefineLuz()
@@ -213,7 +215,7 @@ animate = True
 def teclado_win3(key, x, y):
     global animate
     
-    if key == b' ':
+    if key == b'p':
         animate = not animate
 
 def special_win3(key, x, y):

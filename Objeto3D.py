@@ -10,6 +10,7 @@ class Objeto3D:
         self.faces    = []
         self.position = Ponto(0,0,0)
         self.rotation = (0,0,0,0)
+        self.color = (.3, .3, .3)
         pass
 
     def LoadFile(self, file:str):
@@ -74,7 +75,7 @@ class Objeto3D:
         glPushMatrix()
         glTranslatef(self.position.x, self.position.y, self.position.z)
         glRotatef(self.rotation[3], self.rotation[0], self.rotation[1], self.rotation[2])
-        glColor3f(0.34, .34, .34)
+        glColor3f(*self.color)
         glLineWidth(2)        
         
         for f in self.faces:            
@@ -88,3 +89,12 @@ class Objeto3D:
         pass
 
 
+    def setColor(self, color: tuple):
+        if len(color) == 3:
+            self.color = color
+    def copy(self):
+        newObj = Objeto3D()
+        newObj.vertices = [Ponto(v.x, v.y, v.z) for v in self.vertices]
+        newObj.faces = [face.copy() for face in self.faces]
+        newObj.setColor(tuple(self.color))
+        return newObj

@@ -7,15 +7,22 @@ class Transicao3D():
         self.o1 = Objeto3D()
         self.o2 = Objeto3D()
         self.interpolated = Objeto3D()
+        self.interpolatedColors = [() for _ in range(num_frames)]
         self.stagesVertex = []
         self.progess = 0.0
         self.num_frames = num_frames
 
-    def loadObj1(self, file:str):
-        self.o1.LoadFile(file)
+    def loadObj1(self, src):
+        if isinstance(src, str):
+            self.o1.LoadFile(src)
+        elif isinstance(src, Objeto3D):
+            self.o1 = src.copy()
     
-    def loadObj2(self, file:str):
-        self.o2.LoadFile(file)
+    def loadObj2(self, src):
+        if isinstance(src, str):
+            self.o2.LoadFile(src)
+        elif isinstance(src, Objeto3D):
+            self.o2 = src.copy()
 
     def preprocess(self):
         if len(self.o2.faces) > len(self.o1.faces):
@@ -33,6 +40,8 @@ class Transicao3D():
                 vertex.y + mid_diff.y,
                 vertex.z + mid_diff.z
                 )
+            
+        self.interpolateColors()
 
 
         self.interpolated.faces = self.o1.faces.copy()
@@ -79,6 +88,8 @@ class Transicao3D():
                 vertex.y + mid_diff.y,
                 vertex.z + mid_diff.z
                 )
+            
+        self.interpolateColors()
 
 
         self.interpolated.faces = self.o1.faces.copy()
@@ -116,6 +127,9 @@ class Transicao3D():
         self.stagesVertex.append(self.interpolated.vertices)
         if len(self.stagesVertex)>0:
             self.interpolated.vertices = self.stagesVertex.pop(0)
+        newColor = self.interpolatedColors.pop(0)
+        self.interpolatedColors.append(newColor)
+        self.interpolated.setColor(newColor)
         self.interpolated.Desenha()
         #self.interpolated.DesenhaVertices()
         self.interpolated.DesenhaWireframe()
@@ -183,3 +197,9 @@ class Transicao3D():
             mid += v
         mid /= len(obj.vertices)
         return mid
+    def interpolateColors(self):
+        denom = self.num_frames - 1
+        for i in range(0, self.num_frames):
+            w1 = (denom - i) / denom
+            w2 = i / denom
+            self.interpolatedColors[i] = tuple(w1*a + w2*b for a, b in zip(self.o1.color, self.o2.color))
