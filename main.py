@@ -41,7 +41,7 @@ def initObj2():
 
     o2 = Objeto3D()
     o2.LoadFile('models/easy2.obj')
-    o2.setColor((0.4, 0.2, 0.3))
+    o2.setColor((0.01, 0.4, 0.2))
 
     DefineLuz()
     PosicUser()

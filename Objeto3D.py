@@ -78,8 +78,13 @@ class Objeto3D:
         glColor3f(*self.color)
         glLineWidth(2)        
         
-        for f in self.faces:            
-            glBegin(GL_TRIANGLE_FAN)
+        for f in self.faces:         
+            if not f or len(f) < 3:
+                continue
+            if(len(f) == 3):
+                glBegin(GL_TRIANGLE_FAN)
+            else:
+                glBegin(GL_POLYGON)
             for iv in f:
                 v = self.vertices[iv]
                 glVertex(v.x, v.y, v.z)
