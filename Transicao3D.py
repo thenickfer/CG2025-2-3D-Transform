@@ -1,4 +1,5 @@
 
+from itertools import combinations
 from math import floor
 from Objeto3D import *
 
@@ -30,6 +31,15 @@ class Transicao3D():
             aux = self.o2
             self.o2 = self.o1
             self.o1 = aux
+        
+        global maxDist1, maxDist2
+
+        maxDist1 = 0.0
+        if len(self.o1.vertices) >= 2:
+            maxDist1 = max(self._calculate_distance(a, b) for a, b in combinations(self.o1.vertices, 2))
+        maxDist2 = 0.0
+        if len(self.o2.vertices) >= 2:
+            maxDist2 = max(self._calculate_distance(a, b) for a, b in combinations(self.o1.vertices, 2))
 
         self.interpolated.color = self.o1.color
 
@@ -193,26 +203,38 @@ class Transicao3D():
                 
                 
     def findNearest(self, target_point, obj, map):
-
-        nearest_face_index = 0
+        global maxDist1, maxDist2
+        maxDist = (maxDist1 if obj is self.o1 else maxDist2)/4
+        nearest_face_index = -1
         nearest_distance = float('inf')
         nearest_face_center = None
-        
+
+        nearest_unnocupied_face_index = -1
+        nearest_unnocupied_distance = float('inf')
+        nearest_unnocupied_face_center = None
+
         for face_idx, face in enumerate(obj.faces):
 
-            if not map[face_idx]:
-                face_center = Ponto(0, 0, 0)
-                for vertex_idx in face:
-                    face_center += obj.vertices[vertex_idx]
-                face_center /= len(face)
+            face_center = Ponto(0, 0, 0)
+            for vertex_idx in face:
+                face_center += obj.vertices[vertex_idx]
+            face_center /= len(face)
 
-                distance = self._calculate_distance(target_point, face_center)
+            distance = self._calculate_distance(target_point, face_center)
 
-                if distance < nearest_distance:
-                    nearest_distance = distance
-                    nearest_face_index = face_idx
-                    nearest_face_center = face_center
-                
+            if distance < nearest_distance:
+                nearest_distance = distance
+                nearest_face_index = face_idx
+                nearest_face_center = face_center
+
+            if not map[face_idx] and distance<=maxDist and distance < nearest_unnocupied_distance:
+                nearest_unnocupied_face_index = face_idx
+                nearest_unnocupied_distance = distance
+                nearest_unnocupied_face_center = face_center
+        
+        if nearest_unnocupied_face_index != -1:
+            return nearest_unnocupied_face_index, nearest_unnocupied_distance, nearest_unnocupied_face_center
+
         return nearest_face_index, nearest_distance, nearest_face_center
     
     def _calculate_distance(self, point1, point2):
