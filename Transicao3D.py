@@ -32,6 +32,23 @@ class Transicao3D():
             self.o2 = self.o1
             self.o1 = aux
         
+        orig_len = len(self.o1.vertices)
+        cloned_vertices = []
+        new_faces = []
+        counter = 0
+        o1v = self.o1.vertices
+        for face in self.o1.faces:
+            new_face = []
+            for idx in face:
+                v = o1v[idx]
+                cloned_vertices.append(Ponto(v.x, v.y, v.z))
+                new_face.append(orig_len + counter)
+                counter += 1
+            new_faces.append(new_face)
+
+        self.o1.vertices.extend(cloned_vertices)
+        self.o1.faces = new_faces
+
         global maxDist1, maxDist2
 
         maxDist1 = 0.0
@@ -72,17 +89,17 @@ class Transicao3D():
 
         map = [False for _ in self.o1.faces]
 
-        face_map1 = {v: set() for v in range(len(self.o1.vertices))}
-        for f_idx, f in enumerate(self.o1.faces):
-            for v_idx in f: 
-                face_map1[v_idx].add(f_idx)
-        face_map2 = {v: set() for v in range(len(self.o2.vertices))}
-        for f_idx, f in enumerate(self.o2.faces):
-            for v_idx in f: 
-                face_map2[v_idx].add(f_idx)
+        #face_map1 = {v: set() for v in range(len(self.o1.vertices))}
+        #for f_idx, f in enumerate(self.o1.faces):
+        #    for v_idx in f: 
+        #        face_map1[v_idx].add(f_idx)
+        #face_map2 = {v: set() for v in range(len(self.o2.vertices))}
+        #for f_idx, f in enumerate(self.o2.faces):
+        #    for v_idx in f: 
+        #        face_map2[v_idx].add(f_idx)
         
         
-        o2_facen = len(self.o2.faces)
+        #o2_facen = len(self.o2.faces)
         for i in range(len(self.o1.faces)):
             o1_face = self.o1.faces[i]
             #target_face = self.o2.faces[i%o2_facen]
@@ -204,7 +221,7 @@ class Transicao3D():
                 
     def findNearest(self, target_point, obj, map):
         global maxDist1, maxDist2
-        maxDist = (maxDist1 if obj is self.o1 else maxDist2)/4
+        maxDist = (maxDist1 if obj is self.o1 else maxDist2)/2
         nearest_face_index = -1
         nearest_distance = float('inf')
         nearest_face_center = None

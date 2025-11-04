@@ -40,7 +40,7 @@ def initObj2():
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     o2 = Objeto3D()
-    o2.LoadFile('models/easy2.obj')
+    o2.LoadFile('models/easy3.obj')
     o2.setColor((0.01, 0.4, 0.2))
 
     DefineLuz()
