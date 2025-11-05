@@ -23,7 +23,7 @@ def initObj1():
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     o1 = Objeto3D()
-    o1.LoadFile('models/easy1.obj')
+    o1.LoadFile('models/easy3.obj')
     o1.setColor((0.4, 0.42, 0.05))
 
     DefineLuz()
@@ -40,7 +40,7 @@ def initObj2():
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     o2 = Objeto3D()
-    o2.LoadFile('models/easy3.obj')
+    o2.LoadFile('models/easy1.obj')
     o2.setColor((0.01, 0.4, 0.2))
 
     DefineLuz()
@@ -56,7 +56,7 @@ def initObj3():
     glEnable(GL_CULL_FACE)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-    o3 = Transicao3D(40)
+    o3 = Transicao3D(10)
     o3.loadObj1(o1)
     o3.loadObj2(o2)
     o3.preprocess()

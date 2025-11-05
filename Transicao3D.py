@@ -3,6 +3,8 @@ from itertools import combinations
 from math import floor
 from Objeto3D import *
 
+import cProfile
+import pstats
 
 class Transicao3D():
     def __init__(self, num_frames: int):
@@ -13,6 +15,8 @@ class Transicao3D():
         self.stagesVertex = []
         self.progess = 0.0
         self.num_frames = num_frames
+        self._face_centers_cache = {1: [], 2: []}
+        self._face_distances_cache = {}
 
     def loadObj1(self, src):
         if isinstance(src, str):
@@ -27,49 +31,13 @@ class Transicao3D():
             self.o2 = src.copy()
 
     def preprocess(self):
+        #profiler = cProfile.Profile()
+        #profiler.enable()
         if len(self.o2.faces) > len(self.o1.faces):
             aux = self.o2
             self.o2 = self.o1
             self.o1 = aux
         
-        orig_len = len(self.o1.vertices)
-        cloned_vertices = []
-        new_faces = []
-        counter = 0
-        o1v = self.o1.vertices
-        for face in self.o1.faces:
-            new_face = []
-            for idx in face:
-                v = o1v[idx]
-                cloned_vertices.append(Ponto(v.x, v.y, v.z))
-                new_face.append(orig_len + counter)
-                counter += 1
-            new_faces.append(new_face)
-
-        self.o1.vertices.extend(cloned_vertices)
-        self.o1.faces = new_faces
-
-        global maxDist1, maxDist2
-
-        maxDist1 = 0.0
-        if len(self.o1.vertices) >= 2:
-            maxDist1 = max(self._calculate_distance(a, b) for a, b in combinations(self.o1.vertices, 2))
-        maxDist2 = 0.0
-        if len(self.o2.vertices) >= 2:
-            maxDist2 = max(self._calculate_distance(a, b) for a, b in combinations(self.o1.vertices, 2))
-
-        self.interpolated.color = self.o1.color
-
-        #normalizar os dados nao adiantou
-        """
-        maxX, maxY, maxZ = [max(getattr(v, a) for v in self.o1.vertices) for a in ('x', 'y', 'z')]
-        maxxx = max(maxX, maxY, maxZ)
-        self.o1.vertices = [Ponto(v.x/maxxx, v.y/maxxx, v.z/maxxx) for v in self.o1.vertices]
-        maxX, maxY, maxZ = [max(getattr(v, a) for v in self.o2.vertices) for a in ('x', 'y', 'z')]
-        maxxx = max(maxX, maxY, maxZ)
-        self.o2.vertices = [Ponto(v.x/maxxx, v.y/maxxx, v.z/maxxx) for v in self.o2.vertices] 
-        """
-
         mid_o1 = self.getMidPoint(self.o1)
         mid_o2 = self.getMidPoint(self.o2)
         mid_diff = mid_o1 - mid_o2;
@@ -80,34 +48,78 @@ class Transicao3D():
                 vertex.y + mid_diff.y,
                 vertex.z + mid_diff.z
                 )
-            
 
-    
+        self._face_centers_cache[1] = {}
+        self._face_centers_cache[2] = {}
+        
+        self.preprocessFaceCenters(self.o1)
+        self.preprocessFaceCenters(self.o2)
+
+        global maxDist1, maxDist2
+
+        #normalizar os dados nao adiantou
+        
+        """ maxX, maxY, maxZ = [max(getattr(v, a) for v in self.o1.vertices) for a in ('x', 'y', 'z')]
+        maxxx = max(maxX, maxY, maxZ)
+        self.o1.vertices = [Ponto(v.x/maxxx, v.y/maxxx, v.z/maxxx) for v in self.o1.vertices]
+        maxX, maxY, maxZ = [max(getattr(v, a) for v in self.o2.vertices) for a in ('x', 'y', 'z')]
+        maxxx = max(maxX, maxY, maxZ)
+        self.o2.vertices = [Ponto(v.x/maxxx, v.y/maxxx, v.z/maxxx) for v in self.o2.vertices]  """
+       
+        maxDist1 = 0.0 #fica muito pesado, mas a animacao fica muito melhor, usar apenas em modelos leves
+        if len(self.o1.vertices) >= 2:
+            maxDist1 = 40#max(self._calculate_distance(a, b) for a, b in combinations(self.o1.vertices, 2))
+        maxDist2 = 0.0
+        if len(self.o2.vertices) >= 2:
+            maxDist2 = 40#max(self._calculate_distance(a, b) for a, b in combinations(self.o2.vertices, 2))
+
+        self.interpolated.color = self.o1.color
 
             
         self.interpolateColors()
 
         map = [False for _ in self.o1.faces]
 
-        #face_map1 = {v: set() for v in range(len(self.o1.vertices))}
+        face_map1 = {}#{v: set() for v in range(len(self.o1.vertices))}
         #for f_idx, f in enumerate(self.o1.faces):
         #    for v_idx in f: 
         #        face_map1[v_idx].add(f_idx)
-        #face_map2 = {v: set() for v in range(len(self.o2.vertices))}
+        face_map2 = {}#{v: set() for v in range(len(self.o2.vertices))}
         #for f_idx, f in enumerate(self.o2.faces):
         #    for v_idx in f: 
         #        face_map2[v_idx].add(f_idx)
         
         
         #o2_facen = len(self.o2.faces)
+        mapface2face = {}
         for i in range(len(self.o1.faces)):
-            o1_face = self.o1.faces[i]
+            o1_face = self.o1.faces[i] #caso eu clone os vertices, é possível apenas mapear faces com um hash simples, pois nao tem dependencia espacial
             #target_face = self.o2.faces[i%o2_facen]
-            target_idx, _, _ = self.findNearest(self.getFaceCenter(o1_face, self.o1), self.o2, map)
+            #target_idx = i%o2_facen
+            target_idx, _, _ = self.findNearest(self._face_centers_cache[1][i], self.o2, map)#self.getFaceCenter(o1_face, self.o1), self.o2, map)
             map[target_idx] = True
+            mapface2face[i] = target_idx
             target_face = self.o2.faces[target_idx]
             self.subdivide(i, target_idx, face_map1, 1)
             self.subdivide(target_idx, i, face_map2, 2)
+        #aqui clono os vertices de cada face, para evitar stretching em modelos mais complexos
+        orig_len = len(self.o1.vertices)
+        total_clones = sum(len(f) for f in self.o1.faces)
+        cloned_vertices = [None] * total_clones
+        new_faces = []
+        counter = 0
+        o1v = self.o1.vertices
+        for face in self.o1.faces:
+            qt_vertices = len(face)
+            new_face = list(range(orig_len+counter, orig_len+counter+qt_vertices))
+            new_faces.append(new_face)
+            for idx in face:
+                v = o1v[idx]
+                cloned_vertices[counter] = Ponto(v.x, v.y, v.z)
+                counter += 1
+
+        self.o1.vertices.extend(cloned_vertices)
+        self.o1.faces = new_faces
 
         """ self.vertex_check = [False for _ in self.o2.vertices]
         self.vertex_map = {
@@ -117,17 +129,17 @@ class Transicao3D():
 
 
         self.interpolated.faces = [list(f) for f in self.o1.faces]
-        self.interpolated.vertices = [Ponto(p.x, p.y, p.z) for p in self.o1.vertices]
+        self.interpolated.vertices = self.o1.vertices#[Ponto(p.x, p.y, p.z) for p in self.o1.vertices]
         self.stagesVertex = [[Ponto(p.x, p.y, p.z) for p in self.o1.vertices] for _ in range(self.num_frames)]
 
-        map = [False for _ in self.interpolated.faces]
-        o2_facen = len(self.o2.faces)
+        #map = [False for _ in self.interpolated.faces]
+        #o2_facen = len(self.o2.faces)
         normalizer = self.num_frames-1
         for i in range(len(self.o1.faces)):
-            o1_face = list(self.o1.faces[i])
-            target_idx, _, _ = self.findNearest(self.getFaceCenter(o1_face, self.o1), self.o2, map)
-            map[target_idx] = True
-            target_face = list(self.o2.faces[target_idx])
+            o1_face = self.o1.faces[i]
+            target_idx = mapface2face[i]#, _, _ = self.findNearest(self.getFaceCenter(o1_face, self.o1), self.o2, map)
+            #map[target_idx] = True
+            target_face = self.o2.faces[target_idx]
 
 
             for ix in range(len(o1_face)):
@@ -151,6 +163,9 @@ class Transicao3D():
             self.stagesVertex.insert(-1, self.stagesVertex[-1])
             self.interpolatedColors.insert(0, self.interpolatedColors[0])
             self.interpolatedColors.insert(-1, self.interpolatedColors[-1])
+        #profiler.disable()
+        #stats = pstats.Stats(profiler).sort_stats('tottime')
+        #stats.print_stats()
         
 
     def subdivide(self, face_idx, target_face_idx, face_map, selector):
@@ -221,6 +236,7 @@ class Transicao3D():
                 
     def findNearest(self, target_point, obj, map):
         global maxDist1, maxDist2
+        cache_map = self._face_centers_cache[1] if obj is self.o1 else self._face_centers_cache[2]
         maxDist = (maxDist1 if obj is self.o1 else maxDist2)/2
         nearest_face_index = -1
         nearest_distance = float('inf')
@@ -230,12 +246,8 @@ class Transicao3D():
         nearest_unnocupied_distance = float('inf')
         nearest_unnocupied_face_center = None
 
-        for face_idx, face in enumerate(obj.faces):
-
-            face_center = Ponto(0, 0, 0)
-            for vertex_idx in face:
-                face_center += obj.vertices[vertex_idx]
-            face_center /= len(face)
+        for face_idx in range(len(obj.faces)):#, face in enumerate(obj.faces):
+            face_center = cache_map[face_idx]
 
             distance = self._calculate_distance(target_point, face_center)
 
@@ -250,15 +262,22 @@ class Transicao3D():
                 nearest_unnocupied_face_center = face_center
         
         if nearest_unnocupied_face_index != -1:
-            return nearest_unnocupied_face_index, nearest_unnocupied_distance, nearest_unnocupied_face_center
+            return nearest_unnocupied_face_index, nearest_unnocupied_distance, nearest_unnocupied_face_center 
 
         return nearest_face_index, nearest_distance, nearest_face_center
     
-    def _calculate_distance(self, point1, point2):
-        dx = point1.x - point2.x
-        dy = point1.y - point2.y
-        dz = point1.z - point2.z
-        return (dx*dx + dy*dy + dz*dz) ** 0.5
+    def _calculate_distance(self, point1, point2): #talvez manter cache de distancias ajude a otimizar, ta complicado
+        k1 = (point1.x, point1.y, point1.z, point2.x, point2.y, point2.z)
+        k2 = (point2.x, point2.y, point2.z, point1.x, point1.y, point1.z)
+        key = k1 if k1 <= k2 else k2
+        d = self._face_distances_cache.get(key)
+        if d is None:
+            dx = point1.x - point2.x
+            dy = point1.y - point2.y
+            dz = point1.z - point2.z
+            d = (dx*dx + dy*dy + dz*dz) ** 0.5
+            self._face_distances_cache[key] = d
+        return d
     
     def findNearestVertex(self, target_point, obj):
         nearest_vertex_index = -1
@@ -292,6 +311,10 @@ class Transicao3D():
             center += obj.vertices[vertex_idx]
         center /= len(face)
         return center
+    def preprocessFaceCenters(self, obj):
+        map = self._face_centers_cache[1] if obj is self.o1 else self._face_centers_cache[2]
+        for i, face in enumerate(obj.faces):
+            map[i] = self.getFaceCenter(face, obj)
 
 
     def getMidPoint(self, obj: Objeto3D):
