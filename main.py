@@ -23,7 +23,7 @@ def initObj1():
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     o1 = Objeto3D()
-    o1.LoadFile('models/easy3.obj')
+    o1.LoadFile('models/Human_Head.obj')
     o1.setColor((0.4, 0.42, 0.05))
 
     DefineLuz()
@@ -40,14 +40,14 @@ def initObj2():
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     o2 = Objeto3D()
-    o2.LoadFile('models/easy1.obj')
+    o2.LoadFile('models/easy3.obj')
     o2.setColor((0.01, 0.4, 0.2))
 
     DefineLuz()
     PosicUser()
 
 def initObj3():
-    global o1, o2, o3
+    global o1, o2, o3, NUM_FRAMES
     glClearColor(0.5, 0.5, 0.9, 1.0)
     glClearDepth(1.0)
 
@@ -55,8 +55,8 @@ def initObj3():
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_CULL_FACE)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-
-    o3 = Transicao3D(10)
+    NUM_FRAMES = 200
+    o3 = Transicao3D(NUM_FRAMES)
     o3.loadObj1(o1)
     o3.loadObj2(o2)
     o3.preprocess()
@@ -225,14 +225,14 @@ def special_win3(key, x, y):
         g_RotateX -= 1.0
     elif key == GLUT_KEY_RIGHT:
         g_RotateX += 1.0
-
+FPS = 24
 def teste(value):
-    global o3
+    global o3, FPS
     if window_3_instanciada and animate:
         o3.update()
         glutSetWindow(window_3)
         glutPostRedisplay()
-        glutTimerFunc(100, teste, 0)
+        glutTimerFunc(int (1000/FPS), teste, 0)
 
 def criaWin3():
     global window_3, window_3_instanciada
@@ -247,12 +247,26 @@ def criaWin3():
     # Função responsável por fazer as inicializações
     initObj3()
     # Registra a funcao callback de redesenho da janela de visualizacao
+    glutReshapeFunc(reshape)
     glutDisplayFunc(desenhaObj3)
     glutKeyboardFunc(teclado_win3)
     glutSpecialFunc(special_win3)
     glutTimerFunc(100, teste, 0)
     window_3_instanciada = True
 
+def reshape(width, height):
+    if height == 0:
+        height = 1
+    aspect = width / height
+    glViewport(0, 0, width, height)
+
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(60, aspect, 0.01, 50)  
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+    gluLookAt(-2, 6, -8, 0, 0, 0, 0, 1.0, 0)
+    glRotatef(g_RotateX, 0, 1.0, 0)
 
 def main():
     global window_1, window_2, window_3
@@ -270,6 +284,7 @@ def main():
     initObj1()
     # Registra a funcao callback de redesenho da janela de visualizacao
     glutDisplayFunc(desenhaObj1)
+    glutReshapeFunc(reshape)
     glutKeyboardFunc(teclado)
 
     glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH)
@@ -283,6 +298,7 @@ def main():
     initObj2()
     # Registra a funcao callback de redesenho da janela de visualizacao
     glutDisplayFunc(desenhaObj2)
+    glutReshapeFunc(reshape)
     glutKeyboardFunc(teclado)
     
 
