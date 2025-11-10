@@ -23,7 +23,7 @@ def initObj1():
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     o1 = Objeto3D()
-    o1.LoadFile('models/Human_Head.obj')
+    o1.LoadFile('models/easy1.obj')
     o1.setColor((0.4, 0.42, 0.05))
 
     DefineLuz()
@@ -225,7 +225,7 @@ def special_win3(key, x, y):
         g_RotateX -= 1.0
     elif key == GLUT_KEY_RIGHT:
         g_RotateX += 1.0
-FPS = 24
+FPS = 60
 def teste(value):
     global o3, FPS
     if window_3_instanciada and animate:

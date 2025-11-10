@@ -68,10 +68,10 @@ class Transicao3D():
        
         maxDist1 = 0.0 #fica muito pesado, mas a animacao fica muito melhor, usar apenas em modelos leves
         if len(self.o1.vertices) >= 2:
-            maxDist1 = 40#max(self._calculate_distance(a, b) for a, b in combinations(self.o1.vertices, 2))
+            maxDist1 = max(self._calculate_distance(a, b) for a, b in combinations(self.o1.vertices, 2))
         maxDist2 = 0.0
         if len(self.o2.vertices) >= 2:
-            maxDist2 = 40#max(self._calculate_distance(a, b) for a, b in combinations(self.o2.vertices, 2))
+            maxDist2 = max(self._calculate_distance(a, b) for a, b in combinations(self.o2.vertices, 2))
 
         self.interpolated.color = self.o1.color
 
